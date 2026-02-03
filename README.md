@@ -12,6 +12,7 @@ This repository uses `renv` to manage the R environment.
 ```r
 install.packages("renv")
 renv::restore()
+```
 
 ## Data availability
 Individual-level data are not publicly available due to human subject privacy restrictions.  
