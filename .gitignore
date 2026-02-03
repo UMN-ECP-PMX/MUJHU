@@ -1,0 +1,38 @@
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# renv cache (keep lock, ignore cache)
+renv/library/
+renv/python/
+renv/staging/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data (NEVER commit)
+data/
+data/**
+
+# Outputs
+deliv/
+deliv/**
+
+# Tables / figures / reports
+**/*.pdf
+**/*.png
+**/*.html
+**/*.docx
+**/*.pptx
+
+# MSI / slurm
+slurm-*
+*.o
+*.e
+core.*
+
+# Misc
+latex-pkg.recipe
+
