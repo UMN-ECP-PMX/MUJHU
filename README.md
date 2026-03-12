@@ -3,7 +3,7 @@
 Code for analyses related to MUJHU projects.
 
 ## Repository structure
-- `model/mrgsolve`: mrgsolve implementations of the published PK models used in this study
+- `model/mrgsolve/`: PK models implemented in mrgsolve adapted from published models
 
 | File | Description |
 |-----|-------------|
