@@ -95,7 +95,7 @@ revar(mod)
 # Create a labeller for facet renaming
 rename_facet <- c(
   PAR = "FTC plasma",
-  MET = "FTCtp cervical tissue"
+  MET = "FTC-TP cervical tissue"
 )
 
 # Extract BLQs
@@ -124,8 +124,8 @@ vpc$layers <- vpc$layers[!point_idx]
 
 # Add obs and blq points on VPC
 vpc <- vpc +
-  geom_point(data = obs_all, aes(x = time, y = DV)) +
-  geom_point(data = blq, aes(x = time, y = DV), color = "red") +
+  geom_point(data = obs_all %>% filter(DV >= LLOQ) , aes(x = time, y = DV)) +
+  geom_point(data = blq, aes(x = time, y = DV), color = "red", shape = 17) +
   facet_wrap(~ name, scales  = "free",
     labeller = labeller(name = rename_facet)) +
   xlab("Time after last dose (hour)") +
@@ -134,7 +134,8 @@ vpc <- vpc +
 mrggsave(vpc,stem = "vpc", width=6, height=5)
 
 # Create VPCs in log scale
-vpc_log <- vpc + scale_y_log10()
+vpc_log <- vpc +   
+  scale_y_log10(labels = scales::trans_format("log10", scales::math_format(10^.x)))
 mrggsave(vpc_log,stem = "vpc_log", width=6, height=5)
 
 
@@ -163,7 +164,7 @@ mapbayr_plot2 <- function(i, logy = FALSE) {
   
   rename_facet <- c(
     PAR = "FTC plasma",
-    MET = "FTCtp cervical tissue"
+    MET = "FTC-TP cervical tissue"
   )
   
   subj_id <- filter(obs1, ID == i) %>% pull(subject_id) %>% unique()

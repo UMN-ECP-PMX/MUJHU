@@ -51,6 +51,24 @@ yy %>% reframe(total=rowSums(across(everything())))
 yy <- clr_c(counts=yy, samples_are = "rows")
 yy %>% reframe(total=rowSums(across(everything())))
 
+# Normality Test
+par(mfrow = c(2,3))
+
+for(g in top_genus[1:6]){
+  hist(yy[[g]],
+       breaks = 20,
+       main = g,
+       xlab = "CLR abundance",
+       col = "grey")
+}
+
+par(mfrow = c(2,3))
+
+for(g in top_genus[1:6]){
+  qqnorm(yy[[g]], main = g)
+  qqline(yy[[g]], col = "red")
+}
+
 # Do a few plots (CLR transformed phylum/genus vs original)
 p1 <- map(names(xx), function(.x){
   p <- ggplot()+geom_point(aes(df[[.x]], xx[[.x]]))+
@@ -133,7 +151,7 @@ hp <- function(dat, top_20_genus=FALSE, phylum_to_genus, d1=TRUE){
   if (!d1) dose <- "_d2"
   
   # Formatting matrix
-  matrix <- cor(dat) %>% as.data.frame() %>% 
+  matrix <- cor(dat, method = "spearman") %>% as.data.frame() %>% # Use spearman rather than pearson
     dplyr::select(contains("tfv")) %>% 
     dplyr::select(contains(dose)) %>% 
     rename_all(.fun=~gsub("tfv_", "", .x)) %>% 

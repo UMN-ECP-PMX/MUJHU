@@ -230,8 +230,16 @@ p4 <- thres_plot(out2)
 p3_log <- thres_plot(out1, logy=TRUE)
 p4_log <- thres_plot(out2, logy=TRUE)
 
-mrggsave(list(p3, p3_log), stem = "thres_d1", width=6, height=5)
-mrggsave(list(p4, p4_log), stem = "thres_d2", width=6, height=5)
+mrggsave(list(p3, p3_log), stem = "thres_d1", width=5, height=5)
+mrggsave(list(p4, p4_log), stem = "thres_d2", width=5, height=5)
+
+# Calculate percentage of exceeding efficacy threshold
+cross_sum <- out1 %>%
+  group_by(ID) %>%
+  summarise(ever_above = any(tfvdp_t > 10700, na.rm = TRUE))
+
+pct_cross <- mean(cross_sum$ever_above) * 100
+pct_cross
 
 # Summarize PK metrics ----------------------------------------------------
 

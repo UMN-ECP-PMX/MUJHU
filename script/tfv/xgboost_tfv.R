@@ -180,9 +180,10 @@ plot_shap <- function(model, X, top_n = NULL, stem = "shap_summary") {
   Xmat <- as.matrix(X)
   sv   <- SHAPforxgboost::shap.values(xgb_model = model, X_train = Xmat)
   slng <- SHAPforxgboost::shap.prep(shap_contrib = sv$shap_score, X_train = as.data.frame(Xmat))
+  levels(slng$variable) <- tools::toTitleCase(
+    sub("^genus_", "", levels(slng$variable)))
   p <- SHAPforxgboost::shap.plot.summary(slng)
-  ggsave(file.path(figDir, paste0(stem, ".pdf")), plot = p, width = 7, height = 6)
-  list(slong = slng, plot = p)
+  return(p)
 }
 
 shap_dependence <- function(model, X, stem = "genus", top_k = 6) {
@@ -199,14 +200,14 @@ shap_dependence <- function(model, X, stem = "genus", top_k = 6) {
     ggplot(df, aes(feature_value, shap_value)) +
       geom_point(alpha = 0.6) +
       geom_smooth(method = "loess", se = FALSE, color = "blue") +
-      labs(x = paste0(v, " (scaled)"), y = "SHAP value") +
+      labs(x = paste0(tools::toTitleCase(sub("^genus_", "", v)), " (scaled)"), 
+           y = NULL) +
       theme_bw(base_size = 10)
   })
   
   p_all <- wrap_plots(plist, ncol = 2)
   
-  ggsave(file.path(figDir, paste0("shap_depend_", stem, ".pdf")),
-         p_all, width = 7, height = 7)
+  return(p_all)
 }
 
 
@@ -237,7 +238,13 @@ mod_phy         <- xgb_final_mod(data_phy$X, data_phy$Y, best_params_phy)
 plot_obs_pred(oof_phy$preds$obs, oof_phy$preds$pred,
               "Observation vs Prediction (Phylum)", "obs_pred_phylum")
 vip_phy  <- plot_importance(mod_phy, data_phy$X, stem = "vip_phylum")
-shap_phy <- plot_shap(mod_phy, data_phy$X, stem = "shap_phylum")
+p <- plot_shap(mod_phy, data_phy$X, stem = "shap_phylum")
+ggsave(
+  filename = file.path(figDir, "shap_beeswarm_phylum.pdf"),
+  plot     = p,
+  width    = 6,
+  height   = 6
+)
 
 # Genus ---------------------------------------------------------
 data_gen <- prep_data("tfv_auc_t_d1", "genus")
@@ -267,7 +274,28 @@ mod_gen <- xgb_final_mod(data_gen$X, data_gen$Y, best_params_gen)
 plot_obs_pred(oof_gen$preds$obs, oof_gen$preds$pred,
               "Observation vs Prediction (Genus)", "obs_pred_genus")
 vip_gen  <- plot_importance(mod_gen, data_gen$X, stem = "vip_genus")
-shap_gen <- plot_shap(mod_gen, data_gen$X, stem = "shap_genus")
 
-shap_dependence(mod_gen, data_gen$X, stem = "genus",  top_k = 6)
+p_bee <- plot_shap(mod_gen, data_gen$X, stem = "genus")
+ggsave(
+  filename = file.path(figDir, "shap_beeswarm_genus.pdf"),
+  plot     = p_bee,
+  width    = 6,
+  height   = 6
+)
 
+p_dep <- shap_dependence(mod_gen, data_gen$X, top_k = 6)
+ggsave(
+  filename = file.path(figDir, "shap_dependence_genus.pdf"),
+  plot     = p_dep,
+  width    = 6,
+  height   = 6
+)
+
+p_combined <- p_bee | p_dep
+p_combined
+ggsave(
+  filename = file.path(figDir, "shap_combined_genus.pdf"),
+  plot     = p_combined,
+  width    = 12,
+  height   = 6
+)

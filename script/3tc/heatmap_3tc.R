@@ -133,7 +133,7 @@ hp <- function(dat, top_20_genus=FALSE, phylum_to_genus, d1=TRUE){
   if (!d1) dose <- "_d2"
   
   # Formatting matrix
-  matrix <- cor(dat) %>% as.data.frame() %>% 
+  matrix <- cor(dat, method = "spearman") %>% as.data.frame() %>% 
     dplyr::select(contains("X3tc")) %>% 
     dplyr::select(contains(dose)) %>% 
     rename_all(.fun=~gsub("X3tc_", "", .x)) %>% 

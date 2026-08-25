@@ -93,13 +93,14 @@ p_perm <- adonis$`Pr(>F)`[1]
 p_label <- paste0("PERMANOVA p = ", signif(p_perm, 3))
 
 # Plot PCoA: Label with ftc exposure
-p1 <- plot_ordination(ph.obj.rel, pcoa, color = "ftc_t_exposures") +
+p <- plot_ordination(ph.obj.rel, pcoa, color = "ftc_t_exposures") +
   geom_point(size = 3) +
   stat_ellipse() +
   labs(color = "FTC Cervical Exposure",
-       subtitle = p_label)
-p1
-mrggsave(p1, stem="pcoa_plot_genus", width=6, height=5)
+       subtitle = p_label)+
+  theme_bw()
+p
+mrggsave(p, stem="pcoa_plot_genus", width=6, height=5)
 
 
 # Alpha versus exposure box plots
@@ -108,15 +109,32 @@ metadata1 <- metadata %>%
   filter(alpha_chao < 1000)
 p1 <- ggboxplot(metadata1, x = "ftc_t_exposures", y = "alpha_shannon", fill = "ftc_t_exposures") +
   stat_compare_means(label.x = 1.5) +
-  labs(x = "FTC cervical tissue exposure group", y = "Shannon Diversity")+ 
+  labs(x = "FTC cervical tissue exposure group", y = "Shannon Diversity")+
+  theme_bw()+ 
   theme(legend.position = "none")
 p2 <- ggboxplot(metadata1, x = "ftc_t_exposures", y = "alpha_chao", fill = "ftc_t_exposures") +
   stat_compare_means(label.x = 1.5) +
-  labs(x = "FTC cervical tissue exposure group", y = "Chao1 Diversity")+ 
+  labs(x = "FTC cervical tissue exposure group", y = "Chao1 Diversity")+
+  theme_bw()+ 
   theme(legend.position = "none")
 p1 + p2
 mrggsave_last(stem="alpha_by_ftc_t_expo", width=8, height=4)
-rm(p1,p2)
+
+p_all <- (p1 | p2 | p) +
+  plot_annotation(
+    tag_levels = "a",
+    tag_prefix = "(",
+    tag_suffix = ")") +
+  ggplot2::theme(
+    plot.tag = ggplot2::element_text(size = 14, face = "plain")
+  )
+
+p_all
+
+mrggsave(p_all,
+         stem = "pcoa_alpha",
+         width = 12,
+         height = 4.5)
 
 # Network analysis--------------------------------------------------------
 

@@ -163,14 +163,15 @@ model_fit <- function(.data, .lambda.1se=FALSE){
 
 # Plot coefficients
 plot_coeff <- function(.x){
-  p <- ggplot(filter(.x, Variable != "(Intercept)"), 
-              aes(x = reorder(Variable, s0), y = s0)) +
+  d <- dplyr::filter(.x, Variable != "(Intercept)") %>%
+    dplyr::mutate(
+      Variable_plot = tools::toTitleCase(sub("^genus_", "", Variable)))
+  
+  ggplot(d, aes(x = reorder(Variable_plot, s0), y = s0)) +
     geom_bar(stat = "identity") +
     coord_flip() + theme_minimal() +
-    labs(title = "Standardized Coefficients \nfrom Ridge Regression",
-         x = "Predictor",
+    labs(x = NULL,
          y = "Coefficient (Change in Tenofovir Vaginal Tissue AUC SD \n per 1 SD Increase)")
-  return(p) 
 }
 
 # Phylum tfv_auc_t_d1 -----------------------------------------------------
@@ -197,6 +198,7 @@ mrggsave(p2, stem="lasso_coeff_phylum", width=6, height=7.5)
 data <- prep_data("tfv_auc_t_d1", "genus")
 
 # Fit model
+
 fit2 <- model_fit(data)
 
 # Plot coefficients
@@ -214,8 +216,8 @@ mrggsave(p2, stem="lasso_coeff_genus", width=6, height=6)
 scat_plot <- function(x){
   var <- sym(as.character(x))
   p <- df %>% ggplot(aes(x=!!var, y=tfv_auc_t_d1))+
-    geom_point()+geom_smooth(method = "lm")+
-    ylab("TFVdp cervial exposure\n(fmol*hour/mL)")
+    geom_point()+geom_smooth(method = "lm") + 
+    ylab(NULL)
   if(x=="age"){
       p<-p+xlab(paste0(str_to_sentence(x), " (years)"))
     }else if(x=="weight"){
@@ -223,7 +225,7 @@ scat_plot <- function(x){
     }else if(grepl("_p", x)){
       p<-p+xlab("TFV plasma exposure\n(ng*hour/mL)")
     }else{
-      p<-p+xlab(paste0("CLR transformed\n", x))
+      p <- p + xlab(paste0("CLR transformed\n", tools::toTitleCase(sub("^genus_", "", x))))
     }
   return(p)}
 
@@ -256,7 +258,22 @@ lasso_coeff <- fit2$lasso$coef %>%
   arrange(Variable) %>% pull(Variable)
 
 plist3 <- map(lasso_coeff, scat_plot)
-pmplots::pm_grid(plist3, ncol=2)
-mrggsave_last(stem="lasso_genus", width=7, height=7)
+p3 <- ggpubr::ggarrange(
+  plotlist = plist3,
+  ncol = 2,
+  nrow = ceiling(length(plist3)/2))
+p3 <- ggpubr::annotate_figure(
+  p3,
+  left = ggpubr::text_grob("TFVdp cervical exposure (fmol*hour/mL)", rot = 90))
+p3
+mrggsave(p3, stem="lasso_genus", width=6, height=6)
+
+
+# Combine lasso plots
+p_combined <- ggpubr::ggarrange(
+  p2, p3,
+  ncol = 2, nrow = 1)
+p_combined
+mrggsave(p_combined, stem="lasso_combined", width=12, height=6)
 
 

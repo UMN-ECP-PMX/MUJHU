@@ -94,7 +94,7 @@ revar(mod)
 # Create a labeller for facet renaming
 rename_facet <- c(
   PAR = "TFV plasma",
-  MET = "TFVdp cervical tissue"
+  MET = "TFV-DP cervical tissue"
 )
 
 # Extract BLQs
@@ -105,21 +105,22 @@ blq <- data %>% filter(DV < LLOQ) %>%
 # Create VPCs
 withr::with_seed(seed = 123, 
                  vpc <- mapbayr::mapbayr_vpc(
-                   mod, data = data, nrep = 200, 
+                   mod, data = data %>% filter(DV >= LLOQ), nrep = 200, 
                    pcvpc = FALSE, end = 48, delta = 0.1)
                  )
 
-vpc <- vpc + geom_point(data=blq, aes(x=time, y=DV), color="red")+
+vpc <- vpc + geom_point(data=blq, aes(x=time, y=DV), color="red", shape = 17)+
   facet_wrap(~name, scales = "free", 
              labeller = labeller(name=rename_facet))+
   xlab("Time after last dose (hour)")+
   ylab("Concentration (fmol/L)")
 
-mrggsave(vpc,stem = "vpc", width=6, height=5)
+mrggsave(vpc,stem = "vpc", width=10, height=5)
 
 # Create VPCs in log scale
-vpc_log <- vpc + scale_y_log10()
-mrggsave(vpc_log,stem = "vpc_log", width=6, height=5)
+vpc_log <- vpc + 
+  scale_y_log10(labels = scales::trans_format("log10", scales::math_format(10^.x)))
+mrggsave(vpc_log,stem = "vpc_log", width=10, height=5)
 
 # Map bayes individual test -----------------------------------------------
 
@@ -155,7 +156,7 @@ mapbayr_plot2 <- function(i, logy=FALSE){
   
   rename_facet <- c(
     PAR = "TFV plasma",
-    MET = "TFVdp cervical tissue"
+    MET = "TFV-DP cervical tissue"
   )
   
   subj_id <- filter(obs1, ID == i) %>% pull(subject_id) %>% unique()
@@ -182,7 +183,7 @@ mrggsave(ind_plots_log,stem = "individual_fits_log", width=6, height=5)
 
 # Histogram
 hist <- hist(my_est)
-mrggsave(hist,stem = "histogram", width=6, height=5)
+mrggsave(hist,stem = "histogram", width=5, height=5)
   
 # Output Map Bayes estimates ----------------------------------------------
 

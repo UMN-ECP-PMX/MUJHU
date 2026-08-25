@@ -19,12 +19,11 @@ df <- tribble(
   "TFV plasma AUC",     1,     1,    1,
   "Weight",             1,     1,    1,
   "Gemella",            1,     1,    1,
-  "Falsiporphyromonas", 1,     1,    0,
-  "Megasphaera",        1,     1,    0,
+  "Falsiporphyromonas", 1,     1,    1,
+  "Megasphaera",        1,     1,    1,
   "Prevotella",         0,     0,    1,
-  "Holdemanella",       0,     1,    1,
-  "Streptobacillus",    1,     0,    0,
-  "Gardnerella",        0,     0,    1
+  "Holdemanella",       0,     1,    0,
+  "Streptobacillus",    1,     0,    0
 )
 
 lasso_vars <- df$var[df$LASSO == 1]

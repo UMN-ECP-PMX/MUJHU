@@ -122,7 +122,7 @@ hp <- function(dat, top_20_genus=FALSE, phylum_to_genus, d1=TRUE){
   }
   
   # Formatting matrix
-  matrix <- cor(dat) %>% as.data.frame() %>% 
+  matrix <- cor(dat, method = "spearman") %>% as.data.frame() %>% 
     dplyr::select(contains("ftc")) %>% 
     dplyr::select(contains(dose)) %>% 
     rename_all(.fun=~gsub("ftc_", "", .x)) %>% 

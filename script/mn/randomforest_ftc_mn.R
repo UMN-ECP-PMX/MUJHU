@@ -148,6 +148,7 @@ plot_obs_pred <- function(y, yhat, title, stem) {
 
 shap_beeswarm <- function(model, X, stem = "rf", nsim = 200) {
   X_df <- as.data.frame(X)
+  
   shap_vals <- fastshap::explain(
     object        = model,
     feature_names = colnames(X_df),
@@ -155,30 +156,62 @@ shap_beeswarm <- function(model, X, stem = "rf", nsim = 200) {
     pred_wrapper  = function(object, newdata) predict(object, newdata),
     nsim          = nsim
   )
+  
   shap_mat <- as.matrix(shap_vals)
+  colnames(shap_mat) <- colnames(X_df)
+  
   df_long <- shap_mat %>%
     as.data.frame() %>%
-    mutate(id = row_number()) %>%
-    pivot_longer(-id, names_to = "Feature", values_to = "SHAP") %>%
-    left_join(
-      X_df %>% mutate(id = row_number()) %>%
-        pivot_longer(-id, names_to = "Feature", values_to = "Value"),
+    mutate(id = dplyr::row_number()) %>%
+    tidyr::pivot_longer(-id, names_to = "Feature", values_to = "SHAP") %>%
+    dplyr::left_join(
+      X_df %>% mutate(id = dplyr::row_number()) %>%
+        tidyr::pivot_longer(-id, names_to = "Feature", values_to = "Value"),
       by = c("id", "Feature")
     )
-  feat_order <- df_long %>%
-    group_by(Feature) %>%
-    summarise(m = mean(abs(SHAP))) %>%
-    arrange(desc(m)) %>%
-    pull(Feature)
-  df_long$Feature <- factor(df_long$Feature, levels = rev(feat_order))
-  p <- ggplot(df_long, aes(SHAP, Feature, color = Value)) +
-    geom_quasirandom(alpha = 0.6, size = 1) +
-    scale_color_viridis_c() +
+  
+  # mean(|SHAP|) per feature for ordering + left labels
+  feat_imp <- df_long %>%
+    dplyr::group_by(Feature) %>%
+    dplyr::summarise(m = mean(abs(SHAP), na.rm = TRUE), .groups = "drop") %>%
+    dplyr::arrange(dplyr::desc(m)) %>%
+    dplyr::mutate(
+      Feature_plot = tools::toTitleCase(sub("^genus_", "", Feature)),
+      m_lab = sprintf("%.3f", m)
+    )
+  
+  df_long <- df_long %>%
+    dplyr::mutate(Feature_plot = tools::toTitleCase(sub("^genus_", "", Feature)))
+  
+  df_long$Feature_plot <- factor(df_long$Feature_plot, levels = rev(feat_imp$Feature_plot))
+  
+  # position for the left numeric labels (a bit left of min SHAP)
+  x_min <- min(df_long$SHAP, na.rm = TRUE)
+  x_max <- max(df_long$SHAP, na.rm = TRUE)
+  x_text <- x_min - 0.08 * (x_max - x_min)
+  
+  p <- ggplot(df_long, aes(x = SHAP, y = Feature_plot, color = Value)) +
+    ggbeeswarm::geom_quasirandom(alpha = 0.6, size = 1) +
+    geom_vline(xintercept = 0, linetype = 2) +
+    scale_color_viridis_c(name = "Feature value") +
+    # mean(|SHAP|)
+    geom_text(
+      data = feat_imp,
+      aes(x = x_text, y = Feature_plot, label = m_lab),
+      inherit.aes = FALSE, hjust = 0, size = 3
+    ) +
+    coord_cartesian(xlim = c(x_text, x_max)) +
     theme_bw() +
-    labs(title = paste0("SHAP Beeswarm (", stem, ")"),
-         x = "SHAP value", y = NULL)
-  ggsave(file.path(figDir, paste0("shap_beeswarm_", stem, ".pdf")), p, width = 7, height = 6)
+    theme(
+      axis.title.y = element_blank(),
+      legend.position = "bottom",
+      plot.title = element_blank()
+    ) +
+    labs(x = "SHAP value (impact on model output)", y = NULL)
+  
+  return(p)
 }
+
 
 shap_dependence <- function(model, X, stem = "rf", top_k = 6, nsim = 200) {
   X_df <- as.data.frame(X)
@@ -200,13 +233,12 @@ shap_dependence <- function(model, X, stem = "rf", top_k = 6, nsim = 200) {
     ggplot(df_plot, aes(feature_value, shap_value)) +
       geom_point(alpha = 0.6) +
       geom_smooth(method = "loess", se = FALSE) +
-      labs(x = paste0(v, " (scaled)"), y = "SHAP value") +
+      labs(x = paste0(tools::toTitleCase(sub("^genus_", "", v)), " (scaled)"),
+           y = NULL) +
       theme_bw(base_size = 10)
   })
   p_all <- wrap_plots(plots, ncol = 2)
-  ggsave(
-    filename = file.path(figDir, paste0("shap_dependence_", stem, ".pdf")),
-    plot     = p_all, width    = 7, height   = 7)
+  return(p_all)
 }
 
 # Genus ----------------------------------------------------------
@@ -255,5 +287,29 @@ varImpPlot(mod_gen, type = 1, main = "Variable Importance (Genus)")
 dev.off()
 
 ## SHAP summary + dependence
-shap_beeswarm(mod_gen, data_gen$X, stem = "genus")
-shap_dependence(mod_gen, data_gen$X, stem = "genus", top_k = 6)
+p_bee <- shap_beeswarm(mod_gen, data_gen$X, stem = "genus")
+ggsave(
+  filename = file.path(figDir, "shap_beeswarm_genus.pdf"),
+  plot     = p_bee,
+  width    = 6,
+  height   = 6
+)
+
+p_dep <- shap_dependence(mod_gen, data_gen$X, top_k = 6)
+ggsave(
+  filename = file.path(figDir, "shap_dependence_genus.pdf"),
+  plot     = p_dep,
+  width    = 6,
+  height   = 6
+)
+
+p_combined <- p_bee | p_dep
+
+p_combined
+
+ggsave(
+  filename = file.path(figDir, "shap_combined_genus.pdf"),
+  plot     = p_combined,
+  width    = 12,
+  height   = 6
+)
